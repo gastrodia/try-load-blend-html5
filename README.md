@@ -1,4 +1,4 @@
-try-load-blender-html5
+try-load-blend-html5
 ======================
 
 try load .blend file in html5
