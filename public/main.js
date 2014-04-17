@@ -25,9 +25,21 @@ require(["three","threex-defaultworld","threex-colladaloader","blender","dat.gui
                 console.log("Mesh at 0x" + block.address,
                     "total vertices/faces/edges:",
                         obj.totvert + "/" + obj.totface + "/" + obj.totedge);
-                //console.log(obj.mvert);
+
                 console.log("Object:");
                 console.log(obj);
+                for(var i in obj){
+                    var val = obj[i];
+                    /*if(!isNaN(val)&& val > 10000){
+                        console.log(i,val);
+                        console.log(bl.readObject(val));
+                    }*/
+                    if(val instanceof Array){
+                        console.log(i,val);
+                    }
+                }
+                var vdata = obj["vdata"][2];
+                console.log(vdata);
             }
 
         }else{

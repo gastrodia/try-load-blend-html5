@@ -413,6 +413,11 @@ define(["buffer"], function (bf) {
             }
         };
 
+        methods.readMVert = function(address){
+            var block = this.dna.blockAddr[address];
+            var mesh = this.readObject(address);
+        }
+
         methods.readObject = function (address, offset) {
             offset = offset || 0;
 
@@ -441,6 +446,10 @@ define(["buffer"], function (bf) {
 
                 if (field.pointer) {
                     val = this.convertAddress(val);
+                    if(field.type == "MVert"){
+                        console.log("mvert",field);
+                        //var mvert = this.readMVert(val);
+                    }
                 }else if (field.dim == 1) {
                     switch (field.type) {
                         case "char"     :
@@ -454,15 +463,6 @@ define(["buffer"], function (bf) {
                             break;
                         case "float"    :
                             val = this.convertFloat(val);
-                            break;
-                        case "MVert"   :
-
-                            val = {
-                                co:[],
-                                no:[],
-                                flag:"",
-                                bweight:""
-                            }
                             break;
                         default         :
 
@@ -489,14 +489,6 @@ define(["buffer"], function (bf) {
                                 break;
                             case "float"    :
                                 e = this.convertFloat(val, offset);
-                                break;
-                            case "MVert"   :
-                                e = {
-                                    co:[],
-                                    no:[],
-                                    flag:"",
-                                    bweight:""
-                                }
                                 break;
                             default         :
                                 console.log(field.type);
