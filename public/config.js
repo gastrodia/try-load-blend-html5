@@ -22,6 +22,10 @@ require.config({
     "dat.gui": "components/dat.gui/dat.gui",
     "threejs-stats": "components/threejs-stats/Stats",
     "threex-colladaloader": "components/threex-colladaloader/ColladaLoader",
-    bl: "src/bl"
+    blender: "src/blender",
+    buffer: "components/buffer/buffer.min"
+  },
+  urlArgs: {
+    bust: "1397722618917"
   }
 });
