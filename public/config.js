@@ -8,6 +8,11 @@ require.config({
       deps: [
         "three"
       ]
+    },
+    "threex-colladaloader": {
+      deps: [
+        "three"
+      ]
     }
   },
   paths: {
@@ -15,6 +20,8 @@ require.config({
     three: "components/three.js/three.min",
     "threex-controls": "components/threex-controls/controls/OrbitControls",
     "dat.gui": "components/dat.gui/dat.gui",
-    "threejs-stats": "components/threejs-stats/Stats"
+    "threejs-stats": "components/threejs-stats/Stats",
+    "threex-colladaloader": "components/threex-colladaloader/ColladaLoader",
+    bl: "src/bl"
   }
 });

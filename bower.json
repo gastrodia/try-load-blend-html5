@@ -2,10 +2,11 @@
   "name": "try-socketio",
   "version": "0.0.0",
   "dependencies": {
-    "threex-defaultworld": "0.0.2",
+    "threex-defaultworld": "0.0.3",
     "three.js": "*",
     "threex-controls": "*",
     "dat.gui": "*",
-    "threejs-stats": "*"
+    "threejs-stats": "*",
+    "threex-colladaloader": "~0.0.1"
   }
 }
