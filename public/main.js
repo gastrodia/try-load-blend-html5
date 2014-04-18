@@ -36,20 +36,21 @@ require(["three","threex-defaultworld","threex-colladaloader","blender","dat.gui
                 }
             }*/
 
-            var scenesBlocks = bl.getBlocks("Scene");
-            for(var i in scenesBlocks){
-                var sceneBlock = scenesBlocks[i];
-                var scene = bl.readObject(sceneBlock.address);
-                console.log(scene);
-                /*for(var j in scene){
-                    var val = scene[j];
-                    if(isAddress(val)){
-                        console.log(j,val);
-                        console.log(bl.readObject(val))
-                    }
-                }*/
-
-            }
+           blender.read("/public/assets/cube_del.blend",function(err,bl2){
+               var blockMap1 = bl.dna.blockMap;
+               var blockMap2 = bl2.dna.blockMap;
+               for(var i in blockMap1){
+                   if(!blockMap2[i]){
+                       console.log(i,"在block2中不存在");
+                       continue;
+                   }
+                   if(blockMap1[i].length != blockMap2[i].length){
+                       console.log("发现不同" + i);
+                       console.log(blockMap1[i]);
+                       console.log(blockMap2[i]);
+                   }
+               }
+           })
         }else{
             console.log("Blend file load error",err);
         }
