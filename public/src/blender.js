@@ -65,7 +65,7 @@ define(["buffer"], function (bf) {
             var header = blender.readHeader(reader);
             if (!header.error) {
                 reader.header = header;
-                blender.setReadMethods(reader, header.pointerSize, header.littleEndian);
+                reader.initReadMethods();
                 reader.readBlocks();
                 callback(null, reader);
             } else {
@@ -119,67 +119,6 @@ define(["buffer"], function (bf) {
         return header;
     };
 
-    Blender.prototype.setReadMethods = function (reader, pointerSize, littleEndian) {
-        // Using lambdas for the core read functions *can't* be efficient at run-time,
-        // but this is a good way to quickly get the code working.
-        function genReadUInt(bytes, suffix) {
-            var funcName = "readUInt" + (bytes * 8) + suffix;
-            return function () {
-                var i = this._pos;
-                this._pos += bytes;
-                return this._buffer[funcName](i);
-            };
-        }
-
-        function genReadAddress(bytes, littleEndian) {
-            // Javascript doesn't natively handle 64-bit integers.  There are modules
-            // that add such support - but for now, we're simply not handling any
-            // files that *require* 64-bit addresses correctly.
-            return function () {
-                var i = this._pos;
-                var j = this._pos += bytes;
-                var s = this._buffer.slice(i, j).toString("hex");
-                var n = parseInt(s, 16);
-                if (s !== ("0000000000000000" + n.toString(16)).slice(-s.length))
-                    throw new Error("Can't handle file with large addresses! " + s);
-                return n;
-            }
-        }
-
-        function genConvert(type, suffix) {
-            var name = "read" + type + suffix;
-            return function (buffer, index) {
-                index = index || 0;
-                return buffer[name](index);
-            };
-        }
-
-        function genConvertAddress(bytes, littleEndian) {
-            // Javascript doesn't natively handle 64-bit integers.  There are modules
-            // that add such support - but for now, we're simply not handling any
-            // files that *require* 64-bit addresses correctly.
-            return function (buffer) {
-                var s = buffer.toString("hex");
-                var n = parseInt(s, 16);
-                if (s !== ("0000000000000000" + n.toString(16)).slice(-s.length))
-                    throw new Error("Can't handle file with large addresses! " + s);
-                return n;
-            }
-        }
-
-
-        var suffix = littleEndian ? "LE" : "BE";
-        reader.readUInt8 = genReadUInt(1, "");
-        reader.readUInt16 = genReadUInt(2, suffix);
-        reader.readUInt32 = genReadUInt(4, suffix);
-        reader.readAddress = genReadAddress(pointerSize, littleEndian);
-
-        reader.convertInt8 = genConvert("Int8", "");
-        reader.convertInt16 = genConvert("Int16", suffix);
-        reader.convertInt32 = genConvert("Int32", suffix);
-        reader.convertFloat = genConvert("Float", suffix);
-        reader.convertAddress = genConvertAddress(pointerSize, littleEndian);
-    };
 
 
 
@@ -244,6 +183,74 @@ define(["buffer"], function (bf) {
         this._pos = 0;
     };
     (function (methods) {
+
+        methods.initReadMethods = function (pointerSize, littleEndian) {
+            var reader = this;
+            var pointerSize = reader.header.pointerSize;
+            var littleEndian = reader.header.littleEndian;
+            // Using lambdas for the core read functions *can't* be efficient at run-time,
+            // but this is a good way to quickly get the code working.
+            function genReadUInt(bytes, suffix) {
+                var funcName = "readUInt" + (bytes * 8) + suffix;
+                return function () {
+                    var i = this._pos;
+                    this._pos += bytes;
+                    return this._buffer[funcName](i);
+                };
+            }
+
+            function genReadAddress(bytes, littleEndian) {
+                // Javascript doesn't natively handle 64-bit integers.  There are modules
+                // that add such support - but for now, we're simply not handling any
+                // files that *require* 64-bit addresses correctly.
+                return function () {
+                    var i = this._pos;
+                    var j = this._pos += bytes;
+                    var s = this._buffer.slice(i, j).toString("hex");
+                    var n = parseInt(s, 16);
+                    if (s !== ("0000000000000000" + n.toString(16)).slice(-s.length)){
+                        console.log("Can't handle file with large addresses! " + s);
+                    }
+
+                    return n;
+                }
+            }
+
+            function genConvert(type, suffix) {
+                var name = "read" + type + suffix;
+                return function (buffer, index) {
+                    index = index || 0;
+                    return buffer[name](index);
+                };
+            }
+
+            function genConvertAddress(bytes, littleEndian) {
+                // Javascript doesn't natively handle 64-bit integers.  There are modules
+                // that add such support - but for now, we're simply not handling any
+                // files that *require* 64-bit addresses correctly.
+                return function (buffer) {
+                    var s = buffer.toString("hex");
+                    var n = parseInt(s, 16);
+                    if (s !== ("0000000000000000" + n.toString(16)).slice(-s.length)){
+                        console.log("Can't handle file with large addresses! " + s);
+                    }
+                    return n;
+                }
+            }
+
+
+            var suffix = littleEndian ? "LE" : "BE";
+            reader.readUInt8 = genReadUInt(1, "");
+            reader.readUInt16 = genReadUInt(2, suffix);
+            reader.readUInt32 = genReadUInt(4, suffix);
+            reader.readAddress = genReadAddress(pointerSize, littleEndian);
+
+            reader.convertInt8 = genConvert("Int8", "");
+            reader.convertInt16 = genConvert("Int16", suffix);
+            reader.convertInt32 = genConvert("Int32", suffix);
+            reader.convertFloat = genConvert("Float", suffix);
+            reader.convertAddress = genConvertAddress(pointerSize, littleEndian);
+        };
 
         methods.tell = function () {
             return this._pos;
@@ -413,11 +420,6 @@ define(["buffer"], function (bf) {
             }
         };
 
-        methods.readMVert = function(address){
-            var block = this.dna.blockAddr[address];
-            var mesh = this.readObject(address);
-        }
-
         methods.readObject = function (address, offset) {
             offset = offset || 0;
 
@@ -442,14 +444,11 @@ define(["buffer"], function (bf) {
      ;
             for (var i = 0; i < struct.fields.length; ++i) {
                 var field = struct.fields[i];
-                var val = this.readBuffer(field.size);
+                var val = this.readBuffer(field.size); //根据field的大小读buffer
 
+                //对指针类型 基础类型 数组类型分别处理
                 if (field.pointer) {
                     val = this.convertAddress(val);
-                    if(field.type == "MVert"){
-                        console.log("mvert",field);
-                        //var mvert = this.readMVert(val);
-                    }
                 }else if (field.dim == 1) {
                     switch (field.type) {
                         case "char"     :
@@ -531,6 +530,104 @@ define(["buffer"], function (bf) {
         methods.getBlocks = function (type) {
             return this.dna.blockMap[type];
         };
+
+        methods.buffer2Object = function(buffer,struct){
+            var obj = new Object();
+            var aReader = new Reader(buffer);
+            aReader.header = this.header;
+            aReader.initReadMethods();
+            for (var i = 0; i < struct.fields.length; ++i) {
+                var field = struct.fields[i];
+                var val = aReader.readBuffer(field.size); //根据field的大小读buffer
+
+                //对指针类型 基础类型 数组类型分别处理
+                if (field.pointer) {
+                    val = aReader.convertAddress(val);
+                }else if (field.dim == 1) {
+                    switch (field.type) {
+                        case "char"     :
+                            val = aReader.convertInt8(val);
+                            break;
+                        case "short"    :
+                            val = aReader.convertInt16(val);
+                            break;
+                        case "int"      :
+                            val = aReader.convertInt32(val);
+                            break;
+                        case "float"    :
+                            val = aReader.convertFloat(val);
+                            break;
+                        default         :
+
+                            val = [ field.type, field.dim, val ];
+                            break;
+                    }
+                    ;
+                }else if (field.dim > 1) {
+                    var a = [];
+                    var elementSize = field.size / field.dim;
+                    var offset = 0;
+                    for (var j = 0; j < field.dim; ++j) {
+                        var e;
+                        switch (field.type) {
+                            case "char"     :
+                                e = aReader.convertInt8(val, offset);
+                                break;
+                            case "short"    :
+                                e = aReader.convertInt16(val, offset);
+                                break;
+                            case "int"      :
+                                e = aReader.convertInt32(val, offset);
+                                break;
+                            case "float"    :
+                                e = aReader.convertFloat(val, offset);
+                                break;
+                            default         :
+                                console.log(field.type);
+                                e = val.slice(offset, offset + elementSize);
+                                break;
+                        }
+                        ;
+                        a.push(e);
+                        offset += elementSize;
+                    }
+                    val = a;
+                }else{
+                    val = [ field.type, field.dim, val ];
+                }
+
+
+                obj[field.ref] = val;
+            }
+            delete  aReader;
+            return obj;
+        }
+
+        methods.buffer2CustomData = function(buffer,struct){
+            return this.buffer2Object(buffer,struct);
+        }
+
+        methods.readMesh = function(obj){
+            console.log("Mesh at 0x" +
+                "total vertices/faces/edges:",
+                    obj.totvert + "/" + obj.totface + "/" + obj.totedge);
+
+            console.log("Object:");
+            console.log(obj);
+            for(var i in obj){
+                var val = obj[i];
+                if(!isNaN(val)&& val > 10000){
+                 console.log(i,val);
+                 console.log(this.readObject(val));
+                 }
+                /*if(val instanceof Array){
+                    console.log(i,val);
+                }*/
+            }
+           // var customData = this.buffer2Structure(obj["vdata"][2],this.getStructure("CustomData"));//其实可以在这里组织好类型再交给buffer2Structure
+           // var customData = this.buffer2CustomData(obj["vdata"][2],this.getStructure("CustomData"));
+           // console.log("customData",customData);
+        }
 
     })(Reader.prototype);
     return new Blender();

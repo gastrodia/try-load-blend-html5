@@ -15,38 +15,49 @@ require(["three","threex-defaultworld","threex-colladaloader","blender","dat.gui
         if(!err){
             console.log("File version: ", bl.header.version);
             console.log("Reading meshes...");
-            var meshes = bl.getBlocks("Mesh");
+           /* var meshes = bl.getBlocks("Mesh");
             console.log(meshes);
 
             for(var i in meshes){
                 var block = meshes[i];
                 var obj = bl.readObject(block.address);
 
-                console.log("Mesh at 0x" + block.address,
-                    "total vertices/faces/edges:",
-                        obj.totvert + "/" + obj.totface + "/" + obj.totedge);
+                var mesh = bl.readMesh(obj);
+            }*/
+            /*for(var type in bl.dna.blockMap){
+                var blocks = bl.dna.blockMap[type];
 
-                console.log("Object:");
-                console.log(obj);
-                for(var i in obj){
-                    var val = obj[i];
-                    /*if(!isNaN(val)&& val > 10000){
-                        console.log(i,val);
-                        console.log(bl.readObject(val));
-                    }*/
-                    if(val instanceof Array){
-                        console.log(i,val);
-                    }
+                console.log("------------------------------------------------------"+ type + "------------------------------------------------------");
+                for(var i in blocks){
+                    var block = blocks[i];
+                    var address = block.address;
+                    var obj = bl.readObject(address);
+                    console.log(obj);
                 }
-                var vdata = obj["vdata"][2];
-                console.log(vdata);
-            }
+            }*/
 
+            var scenesBlocks = bl.getBlocks("Scene");
+            for(var i in scenesBlocks){
+                var sceneBlock = scenesBlocks[i];
+                var scene = bl.readObject(sceneBlock.address);
+                console.log(scene);
+                /*for(var j in scene){
+                    var val = scene[j];
+                    if(isAddress(val)){
+                        console.log(j,val);
+                        console.log(bl.readObject(val))
+                    }
+                }*/
+
+            }
         }else{
             console.log("Blend file load error",err);
         }
 
     });
 
+    function isAddress(val){
+        return !isNaN(val)&& val > 10000;
+    }
 
 });
